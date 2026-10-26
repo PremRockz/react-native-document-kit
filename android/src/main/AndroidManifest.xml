@@ -1,0 +1,63 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Sound for in-app video recording; video still records without it. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Network type and upload-speed estimate for adaptive recording quality. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Download progress and "Downloaded" notifications (asked for on Android 13+). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- CAMERA and RECORD_AUDIO would otherwise make Google Play require a back camera,
+         autofocus and a microphone, hiding the app from tablets and Chromebooks without them. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!-- Android 11+ hides other apps unless declared: needed to find an "Open with" app. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="*/*" />
+        </intent>
+    </queries>
+
+    <application>
+        <!-- Gives the OS camera app a writable URI for the photo/video it records. -->
+        <provider
+            android:name="com.documentkit.DocumentKitFileProvider"
+            android:authorities="${applicationId}.documentkit.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/documentkit_file_paths" />
+        </provider>
+
+        <!-- In-app preview screens; configChanges keeps them alive across rotation. -->
+        <activity
+            android:name="com.documentkit.DocumentKitPdfActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false"
+            android:theme="@style/DocumentKitViewerTheme" />
+        <activity
+            android:name="com.documentkit.DocumentKitImageActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false"
+            android:theme="@style/DocumentKitViewerTheme" />
+        <activity
+            android:name="com.documentkit.DocumentKitTextActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false"
+            android:theme="@style/DocumentKitViewerTheme" />
+        <activity
+            android:name="com.documentkit.DocumentKitHtmlActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false"
+            android:theme="@style/DocumentKitViewerTheme" />
+        <activity
+            android:name="com.documentkit.DocumentKitMediaActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="false"
+            android:theme="@style/DocumentKitViewerTheme" />
+    </application>
+</manifest>

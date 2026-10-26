@@ -1,0 +1,10 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "types": []
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "lib"]
+}

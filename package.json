@@ -1,0 +1,112 @@
+{
+  "name": "react-native-document-kit",
+  "version": "0.1.0",
+  "description": "Camera (photo and video), file and photo picking, downloads with resume, and in-app preview for React Native, on its own native code with no third-party native dependencies",
+  "keywords": [
+    "react-native",
+    "camera",
+    "video",
+    "file-picker",
+    "document-picker",
+    "image-picker",
+    "download",
+    "file-preview",
+    "pdf-viewer",
+    "new-architecture",
+    "turbo-module",
+    "fabric",
+    "android",
+    "ios"
+  ],
+  "license": "MIT",
+  "author": "premYathvik",
+  "homepage": "https://github.com/PremRockz/react-native-document-kit#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PremRockz/react-native-document-kit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PremRockz/react-native-document-kit/issues"
+  },
+  "main": "./lib/module/index.js",
+  "types": "./lib/typescript/src/index.d.ts",
+  "react-native": "./src/index.ts",
+  "source": "./src/index.ts",
+  "files": [
+    "src",
+    "lib",
+    "android",
+    "ios",
+    "react-native-document-kit.podspec",
+    "LICENSE",
+    "CHANGELOG.md",
+    "!android/build",
+    "!android/.gradle",
+    "!android/.cxx",
+    "!ios/build",
+    "!**/__tests__"
+  ],
+  "scripts": {
+    "build": "bob build",
+    "typescript": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "prepare": "bob build"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": ">=0.79.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@react-native/babel-preset": "0.86.3",
+    "@react-native/typescript-config": "0.86.3",
+    "@types/react": "^19.2.0",
+    "eslint": "^9.22.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.0.0",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-builder-bob": "^0.40.11",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.26.1"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json"
+        }
+      ]
+    ]
+  },
+  "codegenConfig": {
+    "name": "RNDocumentKitSpec",
+    "type": "all",
+    "jsSrcsDir": "src/specs",
+    "android": {
+      "javaPackageName": "com.documentkit"
+    },
+    "ios": {
+      "modulesProvider": {
+        "DocumentKitPermissions": "DocumentKitPermissions",
+        "DocumentKitMediaPicker": "DocumentKitMediaPicker",
+        "DocumentKitDownloader": "DocumentKitDownloader",
+        "DocumentKitPreview": "DocumentKitPreview",
+        "DocumentKitNetwork": "DocumentKitNetwork",
+        "DocumentKitCamera": "DocumentKitCamera"
+      },
+      "componentProvider": {
+        "DocumentKitCameraView": "DocumentKitCameraViewComponentView"
+      }
+    }
+  }
+}
