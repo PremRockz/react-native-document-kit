@@ -1,6 +1,6 @@
 {
   "name": "react-native-document-kit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Camera (photo and video), file and photo picking, downloads with resume, and in-app preview for React Native, on its own native code with no third-party native dependencies",
   "keywords": [
     "react-native",
