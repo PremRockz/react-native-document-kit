@@ -16,7 +16,11 @@ const escape = value => value.replace(/[/\\^$*+?.()|[\]{}-]/g, '\\$&');
 const config = {
   watchFolders: [libraryRoot],
   resolver: {
-    blockList: [new RegExp(`^${escape(path.join(libraryRoot, 'node_modules'))}/.*`)],
+    blockList: [
+      new RegExp(`^${escape(path.join(libraryRoot, 'node_modules'))}/.*`),
+      // The Expo test app has its own react-native; never resolve from it.
+      new RegExp(`^${escape(path.join(libraryRoot, 'expo-example'))}/.*`),
+    ],
     nodeModulesPaths: [path.resolve(__dirname, 'node_modules')],
     extraNodeModules: {
       react: path.resolve(__dirname, 'node_modules/react'),

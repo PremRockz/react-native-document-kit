@@ -19,7 +19,9 @@ export const Section: React.FC<{
   description: string;
   children: React.ReactNode;
   actions: React.ReactNode;
-}> = ({title, description, children, actions}) => {
+  /** This topic's last call and result, shown under its buttons. */
+  result?: React.ReactNode;
+}> = ({title, description, children, actions, result}) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <View style={styles.section}>
@@ -34,6 +36,7 @@ export const Section: React.FC<{
       </Pressable>
       {isOpen ? <View style={styles.options}>{children}</View> : null}
       <View style={styles.actions}>{actions}</View>
+      {result}
     </View>
   );
 };

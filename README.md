@@ -8,7 +8,21 @@ React Native, in one package with one result shape.
 [![license](https://img.shields.io/npm/l/react-native-document-kit)](https://github.com/PremRockz/react-native-document-kit/blob/main/LICENSE)
 
 [![Try it in your browser](https://img.shields.io/badge/%E2%96%B6%20Try%20it-in%20your%20browser-1C6FE2?style=for-the-badge)](https://appetize.io/app/b_grlhwnmqijfqcq4kxve2kg3n6i)
+[![Install on Android](https://img.shields.io/badge/%F0%9F%93%B2%20Install-on%20your%20Android%20phone-3DDC84?style=for-the-badge)](https://github.com/PremRockz/react-native-document-kit/releases/latest/download/react-native-document-kit-demo.apk)
 [![Documentation](https://img.shields.io/badge/Read-the%20docs-111827?style=for-the-badge)](https://premrockz.github.io/react-native-document-kit/)
+
+<details>
+<summary>📲 <b>Test on a real Android phone</b> (scan the QR code)</summary>
+<br />
+<img src="https://raw.githubusercontent.com/PremRockz/react-native-document-kit/main/docs/images/demo-apk-qr.png" width="180" alt="QR code to download the demo APK" />
+
+1. Scan the code with your phone's camera, or open the
+   [direct APK link](https://github.com/PremRockz/react-native-document-kit/releases/latest/download/react-native-document-kit-demo.apk).
+2. Open the downloaded file. If Android asks, allow your browser to install unknown apps.
+3. Open **DocumentKit Playground**. The real camera, picker, downloads and preview all work.
+
+The APK is built from [`example/`](example/) by a GitHub Action on every release.
+</details>
 
 🤖 **Android:** ready · 🍎 **iOS:** experimental · ⚡ **New Architecture** · 📄 **MIT**
 
@@ -62,28 +76,36 @@ iOS also needs camera and microphone keys in `Info.plist` (see the docs).
 
 ### Expo
 
-Works with a **development build** (`npx expo prebuild` or EAS Build), not in
-**Expo Go**, because it has its own native code. Use Expo SDK 53 or later (New
-Architecture), then set the Android SDK levels and the iOS keys in `app.json`:
+Works with a **development build** (`npx expo prebuild`, `npx expo run:android` or
+EAS Build), not in **Expo Go** or Snack, because it has its own native code. Use
+Expo SDK 53 or later (New Architecture).
+
+```sh
+npx expo install react-native-document-kit
+```
+
+Then add the config plugin to `app.json`:
 
 ```json
 {
   "expo": {
-    "ios": {
-      "infoPlist": {
-        "NSCameraUsageDescription": "Take photos and videos to attach.",
-        "NSMicrophoneUsageDescription": "Record sound with your videos."
-      }
-    },
     "plugins": [
-      ["expo-build-properties", {"android": {"minSdkVersion": 29, "compileSdkVersion": 36}}]
+      ["react-native-document-kit", {
+        "cameraPermission": "Take photos and videos to attach.",
+        "microphonePermission": "Record sound with your videos."
+      }]
     ]
   }
 }
 ```
 
-Install the plugin with `npx expo install expo-build-properties`. Expo support
-hasn't been tested in an app yet, so reports are welcome.
+The plugin adds the iOS camera and microphone texts and raises Android
+`minSdkVersion` to 29 (and `compileSdkVersion` to 36 where Expo's default is lower).
+Both texts are optional. Pass `"microphonePermission": false` to leave the
+microphone out; videos then record without sound.
+
+The [Expo test app](https://github.com/PremRockz/react-native-document-kit/tree/main/expo-example)
+shows the setup and has a button for every feature.
 
 ## ⚡ Quick start
 

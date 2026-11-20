@@ -1,0 +1,94 @@
+name: Demo APK
+
+# Builds the example Playground app as an installable Android APK and attaches it
+# to a GitHub Release, so anyone can install the demo on a real phone.
+#
+# Stable download link (always the newest release):
+#   https://github.com/PremRockz/react-native-document-kit/releases/latest/download/react-native-document-kit-demo.apk
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Attach the APK to this existing tag''s release (e.g. v0.1.1). Leave empty to only upload a workflow artifact.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: demo-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APK_NAME: react-native-document-kit-demo.apk
+  RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG != '' && env.RELEASE_TAG || github.ref }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            example/package-lock.json
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # `prepare` runs `bob build`, so this also builds the library into lib/
+      - name: Install library dependencies
+        run: npm ci
+
+      - name: Install example dependencies
+        working-directory: example
+        run: npm ci
+
+      # Phones only (ARM): about 45 MB instead of 72 MB with the emulator's x86 parts.
+      # The release build is signed with the debug key: fine for a demo download,
+      # not for the Play Store.
+      - name: Build release APK
+        working-directory: example/android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon
+
+      - name: Rename APK
+        run: |
+          mkdir -p dist
+          cp example/android/app/build/outputs/apk/release/app-release.apk "dist/$APK_NAME"
+          ls -lh dist
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-apk
+          path: dist/${{ env.APK_NAME }}
+          retention-days: 30
+
+      - name: Attach APK to GitHub Release
+        if: env.RELEASE_TAG != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: dist/${{ env.APK_NAME }}
+          fail_on_unmatched_files: true
