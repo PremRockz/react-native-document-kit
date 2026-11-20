@@ -17,6 +17,13 @@ file to preview it.
 
 The same app, live in your browser on a streamed Android phone (no install).
 
+[![Install on Android](https://img.shields.io/badge/%F0%9F%93%B2%20Install-on%20your%20Android%20phone-3DDC84?style=for-the-badge)](https://github.com/PremRockz/react-native-document-kit/releases/latest/download/react-native-document-kit-demo.apk)
+
+<img src="../docs/images/demo-apk-qr.png" width="160" alt="QR code to download the demo APK" />
+
+Or scan this on your phone to install the APK and test the real camera and pickers
+(allow your browser to install unknown apps if Android asks).
+
 ## Run it
 
 You need a React Native 0.86 environment:
@@ -50,6 +57,11 @@ cd example/android
 
 The release build is signed with the debug key, which is fine for a demo download
 but not for the Play Store.
+
+CI does this for you: [`.github/workflows/demo-apk.yml`](../.github/workflows/demo-apk.yml)
+runs on every `v*` tag and attaches `react-native-document-kit-demo.apk` to that
+GitHub Release. To add it to an existing release, run the workflow by hand from
+the Actions tab with `release_tag` set (for example `v0.1.1`).
 
 ## Where things are
 

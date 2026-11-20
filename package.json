@@ -24,7 +24,9 @@
     "turbo-module",
     "fabric",
     "android",
-    "ios"
+    "ios",
+    "expo",
+    "expo-config-plugin"
   ],
   "license": "MIT",
   "author": "premYathvik",
@@ -46,6 +48,7 @@
     "android",
     "ios",
     "react-native-document-kit.podspec",
+    "app.plugin.js",
     "LICENSE",
     "CHANGELOG.md",
     "!android/build",
