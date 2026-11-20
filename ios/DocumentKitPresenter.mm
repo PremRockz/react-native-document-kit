@@ -4,6 +4,9 @@
 
 // One wait per running transition is enough; the cap only guards against a loop.
 static const NSInteger DocumentKitMaxPresentAttempts = 3;
+// How long a screen may take to appear before it counts as refused; the photo
+// picker's out-of-process view can take a second or more to start cold.
+static const NSTimeInterval DocumentKitPresentTimeoutSeconds = 10;
 
 @implementation DocumentKitPresenter
 
@@ -39,11 +42,31 @@ static const NSInteger DocumentKitMaxPresentAttempts = 3;
                                  }];
     return;
   }
-  [presenter presentViewController:viewController animated:YES completion:nil];
-  // UIKit sets this at once when it accepts the presentation, and leaves it nil when it refuses.
-  if (viewController.presentingViewController == nil) {
+  // UIKit refuses, without an error, to present from a screen that is not on screen
+  // or that already shows another one; check that up front.
+  if (presenter.viewIfLoaded.window == nil ||
+      (presenter.presentedViewController != nil && !presenter.presentedViewController.isBeingDismissed)) {
     onFailure();
+    return;
   }
+  __block BOOL isPresented = NO;
+  [presenter presentViewController:viewController
+                          animated:YES
+                        completion:^{
+                          isPresented = YES;
+                        }];
+  // Some screens appear later than this call: PHPickerViewController waits for its
+  // out-of-process view (iOS 26), so presentingViewController is still nil here.
+  // Only a screen that never appeared counts as refused.
+  __weak UIViewController *weakViewController = viewController;
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(DocumentKitPresentTimeoutSeconds * NSEC_PER_SEC)),
+                 dispatch_get_main_queue(), ^{
+                   UIViewController *shown = weakViewController;
+                   if (!isPresented && shown != nil && shown.presentingViewController == nil &&
+                       shown.viewIfLoaded.window == nil) {
+                     onFailure();
+                   }
+                 });
 }
 
 @end

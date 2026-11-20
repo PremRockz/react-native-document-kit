@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **iOS:** the photo library picker no longer reports a failure when it opens slowly. On iOS 26 its screen can take a second or more to appear; DocumentKit now waits up to 10 seconds before treating a screen as refused, and checks up front that the current screen can present one.
+
 ## 0.1.1
 
 Docs only, no code changes.
