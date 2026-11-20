@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
+- **Expo config plugin:** add `"react-native-document-kit"` to `plugins` in `app.json`. It adds the iOS camera and microphone permission texts (`cameraPermission`, `microphonePermission`) and raises Android `minSdkVersion` to 29, and `compileSdkVersion` to 36 where Expo's default is lower. `"microphonePermission": false` leaves the microphone out: no iOS text, and `RECORD_AUDIO` is removed on Android. Works in development builds (`expo prebuild`, EAS Build), not in Expo Go. Replaces the `expo-build-properties` setup from the README.
+- **Expo test app:** `expo-example/` shows the plugin setup and has a button for every feature.
+- **Install the demo on your phone:** each GitHub Release now has an installable Android APK of the Playground, built by a GitHub Action. The README and docs site link to it, with a QR code.
+- **Playground:** each feature shows its own last call and result in its section, instead of one shared panel at the top.
 - **iOS:** the photo library picker no longer reports a failure when it opens slowly. On iOS 26 its screen can take a second or more to appear; DocumentKit now waits up to 10 seconds before treating a screen as refused, and checks up front that the current screen can present one.
 
 ## 0.1.1
