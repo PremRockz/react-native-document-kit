@@ -34,6 +34,9 @@ const DOCUMENT_TYPES = ['any', 'PDF', 'images', 'Office'] as const;
 export const ACCENTS = {Blue: '#1C6FE2', Purple: '#7C3AED', Green: '#16A34A', Orange: '#EA580C'} as const;
 export type AccentName = keyof typeof ACCENTS;
 
+/** The topics that run calls; each keeps and shows its own last result. */
+type Topic = 'camera' | 'systemCamera' | 'library' | 'documents' | 'preview' | 'download';
+
 const CROP_SHAPES: Record<(typeof CROP_SHAPE_SETS)[number], CropAspectRatio[] | undefined> = {
   'all shapes': undefined,
   'square only': ['1:1'],
@@ -70,7 +73,7 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
   onAccentChange,
 }) => {
   const kit = useDocumentKit();
-  const [last, setLast] = useState<CallResult | null>(null);
+  const [results, setResults] = useState<Partial<Record<Topic, CallResult>>>({});
 
   // Camera
   const [cameraMode, setCameraMode] = useState<(typeof CAMERA_MODES)[number]>('photo');
@@ -119,10 +122,10 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
   const [progress, setProgress] = useState<number | null>(null);
   const [downloaded, setDownloaded] = useState<DownloadedFile | null>(null);
 
-  /** Runs a call and shows its code and result; a blocked permission offers Settings. */
-  const run = async (code: string, call: () => Promise<unknown>) => {
+  /** Runs a call and shows its code and result in its topic; a blocked permission offers Settings. */
+  const run = async (topic: Topic, code: string, call: () => Promise<unknown>) => {
     const result = await call();
-    setLast({code, result});
+    setResults(current => ({...current, [topic]: {code, result}}));
     const pick = result as PickResult;
     if (pick?.status === 'permission_denied' && pick.isBlocked) {
       await openAppSettings();
@@ -148,14 +151,14 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
   const openCamera = () => {
     const camera = cameraOptions();
     if (cameraMode === 'photo') {
-      return run(toCode('capturePhoto', camera), () => kit.capturePhoto(camera));
+      return run('camera', toCode('capturePhoto', camera), () => kit.capturePhoto(camera));
     }
     if (cameraMode === 'video') {
       const options = {...videoOptions(), ...camera};
-      return run(toCode('recordVideo', options), () => kit.recordVideo(options));
+      return run('camera', toCode('recordVideo', options), () => kit.recordVideo(options));
     }
     const options = {...camera, modes: ['photo', 'video'] as ('photo' | 'video')[], video: videoOptions()};
-    return run(toCode('openCamera', options), () => kit.openCamera(options));
+    return run('camera', toCode('openCamera', options), () => kit.openCamera(options));
   };
 
   const pickFromLibrary = () => {
@@ -165,12 +168,12 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
       selectionLimit: libraryMultiple && selectionLimit > 0 ? selectionLimit : undefined,
       review: libraryReview || undefined,
     };
-    return run(toCode('pickFromLibrary', options), () => kit.pickFromLibrary(options));
+    return run('library', toCode('pickFromLibrary', options), () => kit.pickFromLibrary(options));
   };
 
   const pickDocuments = () => {
     const options = {allowMultiple: documentsMultiple || undefined, mimeTypes: DOCUMENT_MIME_TYPES[documentType]};
-    return run(toCode('pickDocuments', options), () => kit.pickDocuments(options));
+    return run('documents', toCode('pickDocuments', options), () => kit.pickDocuments(options));
   };
 
   const playerOptions = (): PlayerOptions | undefined => {
@@ -194,11 +197,14 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
       muted: muted || undefined,
       player: playerOptions(),
     };
-    return run(toCode('openPreview', fullSource, options), () => kit.openPreview(fullSource, options));
+    return run('preview', toCode('openPreview', fullSource, options), () => kit.openPreview(fullSource, options));
   };
 
+  /** Previews a returned file; its result goes to Preview, so the list it came from stays. */
   const previewPicked = (file: PickedFile) =>
     preview({uri: file.uri, name: file.name, mimeType: file.mimeType});
+
+  const resultOf = (topic: Topic) => <ResultPanel last={results[topic]} onPreviewFile={previewPicked} />;
 
   const download = () => {
     const sample = SAMPLE_FILES[0].source;
@@ -210,7 +216,7 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
       notification: notification ? {tag: 'playground-pdf', title: sample.name} : undefined,
     };
     setProgress(0);
-    return run(toCode('downloadFile', request), async () => {
+    return run('download', toCode('downloadFile', request), async () => {
       const result = await downloadFile({...request, onProgress: ({fraction}) => setProgress(fraction)});
       setProgress(null);
       if (result.status === 'downloaded') {
@@ -229,7 +235,7 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
       subdirectory: 'DocumentKit Playground',
       notification: notification ? {tag: 'playground-pdf', title: downloaded.name} : undefined,
     };
-    return run(toCode('saveToDevice', file, options), () => saveToDevice(file, options));
+    return run('download', toCode('saveToDevice', file, options), () => saveToDevice(file, options));
   };
 
   return (
@@ -237,15 +243,15 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>DocumentKit Playground</Text>
         <Text style={styles.subtitle}>
-          react-native-document-kit: try every feature with your own options. The call and its result show below.
+          react-native-document-kit: try every feature with your own options. Each call and its result show in
+          its own section.
         </Text>
-
-        <ResultPanel last={last} onPreviewFile={previewPicked} />
 
         <Section
           title="In-app camera"
           description="Photo and video with zoom, flash, front/back, multiple captures and the review screen with Crop & Rotate."
-          actions={<Button title="Open camera" onPress={openCamera} />}>
+          actions={<Button title="Open camera" onPress={openCamera} />}
+          result={resultOf('camera')}>
           <Segmented label="Mode" options={CAMERA_MODES} value={cameraMode} onChange={setCameraMode} />
           <Toggle label="Allow multiple captures" value={allowMultiple} onChange={setAllowMultiple} />
           {allowMultiple ? (
@@ -292,22 +298,28 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
             <>
               <Button
                 title="Photo"
-                onPress={() => run(toCode('capturePhotoWithSystemCamera'), kit.capturePhotoWithSystemCamera)}
+                onPress={() =>
+                  run('systemCamera', toCode('capturePhotoWithSystemCamera'), kit.capturePhotoWithSystemCamera)
+                }
               />
               <Button
                 title="Video"
                 isSecondary={true}
-                onPress={() => run(toCode('recordVideoWithSystemCamera'), () => kit.recordVideoWithSystemCamera())}
+                onPress={() =>
+                  run('systemCamera', toCode('recordVideoWithSystemCamera'), () => kit.recordVideoWithSystemCamera())
+                }
               />
             </>
-          }>
+          }
+          result={resultOf('systemCamera')}>
           <Text style={styles.note}>No options: the system camera app decides its own look and controls.</Text>
         </Section>
 
         <Section
           title="Photo library"
           description="The system photo picker, no permission needed. Optionally the same review and editor as the camera."
-          actions={<Button title="Pick from library" onPress={pickFromLibrary} />}>
+          actions={<Button title="Pick from library" onPress={pickFromLibrary} />}
+          result={resultOf('library')}>
           <Segmented label="Media" options={LIBRARY_TYPES} value={libraryType} onChange={setLibraryType} />
           <Toggle label="Allow multiple" value={libraryMultiple} onChange={setLibraryMultiple} />
           {libraryMultiple ? (
@@ -326,7 +338,8 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
         <Section
           title="Documents"
           description="The system file picker: any file type, original names kept, cloud files downloaded."
-          actions={<Button title="Pick documents" onPress={pickDocuments} />}>
+          actions={<Button title="Pick documents" onPress={pickDocuments} />}
+          result={resultOf('documents')}>
           <Toggle label="Allow multiple" value={documentsMultiple} onChange={setDocumentsMultiple} />
           <Segmented label="File types" options={DOCUMENT_TYPES} value={documentType} onChange={setDocumentType} />
         </Section>
@@ -340,7 +353,8 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
                 <Button key={label} title={label} isSecondary={true} onPress={() => preview(source)} />
               ))}
             </>
-          }>
+          }
+          result={resultOf('preview')}>
           <Toggle label="Save button (Android viewers, player)" value={canSave} onChange={setCanSave} />
           <Toggle label="Download again (forceRefresh)" value={forceRefresh} onChange={setForceRefresh} />
           <Group title="Video / audio player" />
@@ -383,7 +397,7 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
                 title="Clear cache"
                 isSecondary={true}
                 onPress={() =>
-                  run(toCode('clearDownloadCache'), async () => {
+                  run('download', toCode('clearDownloadCache'), async () => {
                     await clearDownloadCache();
                     setDownloaded(null);
                     return {status: 'cleared'};
@@ -391,7 +405,8 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
                 }
               />
             </>
-          }>
+          }
+          result={resultOf('download')}>
           <Toggle label="Download again (forceRefresh)" value={forceRefresh} onChange={setForceRefresh} />
           <Toggle label="Android notification" value={notification} onChange={setNotification} />
           <Text style={styles.note}>

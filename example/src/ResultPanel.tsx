@@ -28,21 +28,17 @@ const statusOf = (result: unknown): string =>
   result && typeof result === 'object' && 'status' in result ? String(result.status) : 'done';
 
 /**
- * The last call: its code, its status, and the files it returned (tap one to
- * preview it). The full result is one tap away, as JSON.
+ * A topic's last call: its code, its status, and the files it returned (tap
+ * one to preview it). The full result is one tap away, as JSON. Renders
+ * nothing until the topic has been run.
  */
-export const ResultPanel: React.FC<{last: CallResult | null; onPreviewFile: (file: PickedFile) => void}> = ({
+export const ResultPanel: React.FC<{last?: CallResult; onPreviewFile: (file: PickedFile) => void}> = ({
   last,
   onPreviewFile,
 }) => {
   const [isJsonShown, setIsJsonShown] = useState(false);
   if (!last) {
-    return (
-      <View style={styles.panel}>
-        <Text style={styles.title}>Result</Text>
-        <Text style={styles.empty}>Run any feature below; its call and what it returned show up here.</Text>
-      </View>
-    );
+    return null;
   }
   const files = filesOf(last.result);
   const status = statusOf(last.result);
@@ -106,23 +102,15 @@ export const ResultPanel: React.FC<{last: CallResult | null; onPreviewFile: (fil
 
 const styles = StyleSheet.create({
   panel: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   title: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.text,
-  },
-  empty: {
-    marginTop: 6,
-    color: colors.muted,
-    fontSize: 14,
-    lineHeight: 20,
   },
   code: {
     marginTop: 10,
