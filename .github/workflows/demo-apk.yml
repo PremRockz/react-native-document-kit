@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Attach the APK to this existing tag''s release (e.g. v0.1.1). Leave empty to only upload a workflow artifact.'
+        description: 'Attach the APK to this tag''s release (e.g. v0.2.0). The APK is built from the branch you run this on. Leave empty to only upload a workflow artifact.'
         required: false
         default: ''
 
@@ -34,13 +34,13 @@ jobs:
     timeout-minutes: 60
 
     steps:
+      # A tag push builds that tag. A manual run builds the branch it was started
+      # on, so a fix on main can still produce the APK for an existing release.
       - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_TAG != '' && env.RELEASE_TAG || github.ref }}
+        uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -49,13 +49,13 @@ jobs:
             example/package-lock.json
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       # `prepare` runs `bob build`, so this also builds the library into lib/
       - name: Install library dependencies
@@ -79,7 +79,7 @@ jobs:
           ls -lh dist
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: demo-apk
           path: dist/${{ env.APK_NAME }}
@@ -87,7 +87,7 @@ jobs:
 
       - name: Attach APK to GitHub Release
         if: env.RELEASE_TAG != ''
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           files: dist/${{ env.APK_NAME }}

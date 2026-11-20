@@ -61,7 +61,7 @@ but not for the Play Store.
 CI does this for you: [`.github/workflows/demo-apk.yml`](../.github/workflows/demo-apk.yml)
 runs on every `v*` tag and attaches `react-native-document-kit-demo.apk` to that
 GitHub Release. To add it to an existing release, run the workflow by hand from
-the Actions tab with `release_tag` set (for example `v0.1.1`).
+the Actions tab with `release_tag` set (for example `v0.2.0`); it builds the branch you run it on.
 
 ## Where things are
 
