@@ -7,7 +7,6 @@ A demo app for [react-native-document-kit](../README.md). One screen covers ever
 - documents
 - preview
 - download and save
-- theming
 
 Each feature has its options as switches and pickers. Run it and you see the exact
 call that was made (as code you can copy) and what it returned. Tap any returned
@@ -67,8 +66,8 @@ the Actions tab with `release_tag` set (for example `v0.2.0`); it builds the bra
 
 | File | What it does |
 |---|---|
-| `App.tsx` | Mounts `DocumentKitProvider` (the theme can be switched live) |
-| `src/Playground.tsx` | The screen: one section per feature, with its options |
-| `src/ResultPanel.tsx` | The last call as code, its status, and the returned files |
+| `App.tsx` | Mounts `DocumentKitProvider` |
+| `src/Playground.tsx` | The screen: one section per feature, with its options and its result |
+| `src/ResultPanel.tsx` | A feature's last call as code, its status, and the returned files |
 | `src/controls.tsx` | Switches, pickers, steppers and the code formatter |
 | `src/samples.ts` | Public files used by Preview and Download |

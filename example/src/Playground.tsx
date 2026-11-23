@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import React, {useRef, useState} from 'react';
+import {Platform, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   clearDownloadCache,
@@ -20,7 +20,7 @@ import type {
   PreviewSource,
   RecordVideoOptions,
 } from 'react-native-document-kit';
-import {Button, Group, Section, Segmented, Stepper, Toggle, colors, toCode} from './controls';
+import {Button, Group, ProgressBar, Section, Segmented, Stepper, Toggle, colors, toCode} from './controls';
 import {ResultPanel} from './ResultPanel';
 import type {CallResult} from './ResultPanel';
 import {SAMPLE_FILES} from './samples';
@@ -31,11 +31,29 @@ const VIDEO_QUALITIES = ['auto', 'low', 'medium', 'high'] as const;
 const CROP_SHAPE_SETS = ['all shapes', 'square only', 'free only'] as const;
 const LIBRARY_TYPES = ['mixed', 'photo', 'video'] as const;
 const DOCUMENT_TYPES = ['any', 'PDF', 'images', 'Office'] as const;
-export const ACCENTS = {Blue: '#1C6FE2', Purple: '#7C3AED', Green: '#16A34A', Orange: '#EA580C'} as const;
-export type AccentName = keyof typeof ACCENTS;
 
 /** The topics that run calls; each keeps and shows its own last result. */
 type Topic = 'camera' | 'systemCamera' | 'library' | 'documents' | 'preview' | 'download';
+
+/** The shortcuts at the top, in screen order. */
+const NAV: {topic: Topic; label: string}[] = [
+  {topic: 'camera', label: 'Camera'},
+  {topic: 'systemCamera', label: 'System camera'},
+  {topic: 'library', label: 'Library'},
+  {topic: 'documents', label: 'Documents'},
+  {topic: 'preview', label: 'Preview'},
+  {topic: 'download', label: 'Download'},
+];
+
+/** Icon tile backgrounds, one soft colour per feature. */
+const TINTS: Record<Topic, string> = {
+  camera: '#EAF2FE',
+  systemCamera: '#F4F3FF',
+  library: '#ECFDF3',
+  documents: '#FFFAEB',
+  preview: '#F0F9FF',
+  download: '#FDF2FA',
+};
 
 const CROP_SHAPES: Record<(typeof CROP_SHAPE_SETS)[number], CropAspectRatio[] | undefined> = {
   'all shapes': undefined,
@@ -68,16 +86,30 @@ const changedReview = (review: Required<Omit<CameraReviewOptions, 'cropAspectRat
  * Every DocumentKit feature on one screen: pick the options, run it, and see
  * the exact call and what it returned.
  */
-export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: AccentName) => void}> = ({
-  accent,
-  onAccentChange,
-}) => {
+export const Playground: React.FC = () => {
   const kit = useDocumentKit();
   const [results, setResults] = useState<Partial<Record<Topic, CallResult>>>({});
 
+  // Shortcuts: each section reports where it sits, a shortcut scrolls there.
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionY = useRef<Partial<Record<Topic, number>>>({});
+  const navHeight = useRef(0);
+  const placeOf = (topic: Topic) => ({
+    onLayout: ({nativeEvent}: {nativeEvent: {layout: {y: number}}}) => {
+      sectionY.current[topic] = nativeEvent.layout.y;
+    },
+    tint: TINTS[topic],
+  });
+  const scrollTo = (topic: Topic) => {
+    const y = sectionY.current[topic];
+    if (y !== undefined) {
+      scrollRef.current?.scrollTo({y: Math.max(0, y - navHeight.current - 8), animated: true});
+    }
+  };
+
   // Camera
-  const [cameraMode, setCameraMode] = useState<(typeof CAMERA_MODES)[number]>('photo');
-  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [cameraMode, setCameraMode] = useState<(typeof CAMERA_MODES)[number]>('photo + video');
+  const [allowMultiple, setAllowMultiple] = useState(true);
   const [maxFiles, setMaxFiles] = useState(10);
   const [positionSet, setPositionSet] = useState<(typeof POSITION_SETS)[number]>('back + front');
   const [initialPosition, setInitialPosition] = useState<'back' | 'front'>('back');
@@ -104,7 +136,7 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
   const [libraryMultiple, setLibraryMultiple] = useState(false);
   const [selectionLimit, setSelectionLimit] = useState(0);
   const [libraryReview, setLibraryReview] = useState(true);
-  const [documentsMultiple, setDocumentsMultiple] = useState(false);
+  const [documentsMultiple, setDocumentsMultiple] = useState(true);
   const [documentType, setDocumentType] = useState<(typeof DOCUMENT_TYPES)[number]>('any');
 
   // Preview and download
@@ -240,14 +272,48 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>DocumentKit Playground</Text>
-        <Text style={styles.subtitle}>
-          react-native-document-kit: try every feature with your own options. Each call and its result show in
-          its own section.
-        </Text>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content} stickyHeaderIndices={[1]}>
+        <View style={styles.header}>
+          <View style={styles.brandRow}>
+            <View style={styles.logo}>
+              <Text style={styles.logoText}>DK</Text>
+            </View>
+            <View style={styles.brandText}>
+              <Text style={styles.title}>DocumentKit</Text>
+              <Text style={styles.packageName}>react-native-document-kit</Text>
+            </View>
+            <View style={styles.platformChip}>
+              <Text style={styles.platformChipText}>{Platform.OS === 'ios' ? 'iOS' : 'Android'}</Text>
+            </View>
+          </View>
+          <Text style={styles.subtitle}>
+            Pick the options, run a feature, and see the exact call and what it returned.
+          </Text>
+        </View>
+
+        <View
+          style={styles.nav}
+          onLayout={({nativeEvent}) => {
+            navHeight.current = nativeEvent.layout.height;
+          }}>
+          <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navContent}>
+            {NAV.map(({topic, label}) => (
+              <Pressable
+                key={topic}
+                onPress={() => scrollTo(topic)}
+                accessibilityRole="button"
+                accessibilityLabel={`Go to ${label}`}
+                style={({pressed}) => [styles.navChip, pressed && styles.navChipPressed]}>
+                <Text style={styles.navChipText}>{label}</Text>
+                {results[topic] ? <View style={styles.navDot} /> : null}
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
 
         <Section
+          icon="📷"
+          {...placeOf('camera')}
           title="In-app camera"
           description="Photo and video with zoom, flash, front/back, multiple captures and the review screen with Crop & Rotate."
           actions={<Button title="Open camera" onPress={openCamera} />}
@@ -292,6 +358,8 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
         </Section>
 
         <Section
+          icon="📱"
+          {...placeOf('systemCamera')}
           title="System camera"
           description="The phone's own camera app, e.g. as a fallback when the device has no usable camera."
           actions={
@@ -316,6 +384,8 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
         </Section>
 
         <Section
+          icon="🖼️"
+          {...placeOf('library')}
           title="Photo library"
           description="The system photo picker, no permission needed. Optionally the same review and editor as the camera."
           actions={<Button title="Pick from library" onPress={pickFromLibrary} />}
@@ -336,6 +406,8 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
         </Section>
 
         <Section
+          icon="📄"
+          {...placeOf('documents')}
           title="Documents"
           description="The system file picker: any file type, original names kept, cloud files downloaded."
           actions={<Button title="Pick documents" onPress={pickDocuments} />}
@@ -345,6 +417,8 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
         </Section>
 
         <Section
+          icon="🔍"
+          {...placeOf('preview')}
           title="Preview"
           description="In-app viewers for PDF, images and text; DocumentKit's player streams video and audio."
           actions={
@@ -387,12 +461,19 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
         </Section>
 
         <Section
+          icon="📥"
+          {...placeOf('download')}
           title="Download & save"
           description="Cached downloads with retry and resume, then save to Downloads (Android) or Files (iOS)."
+          footer={progress === null ? null : <ProgressBar fraction={progress} />}
           actions={
             <>
-              <Button title={progress === null ? 'Download PDF' : `Downloading ${Math.round((progress ?? 0) * 100)}%`} onPress={download} />
-              <Button title="Save to device" isSecondary={true} onPress={save} />
+              <Button
+                title={progress === null ? 'Download PDF' : `Downloading ${Math.round(progress * 100)}%`}
+                isDisabled={progress !== null}
+                onPress={download}
+              />
+              <Button title="Save to device" isSecondary={true} isDisabled={!downloaded} onPress={save} />
               <Button
                 title="Clear cache"
                 isSecondary={true}
@@ -414,13 +495,6 @@ export const Playground: React.FC<{accent: AccentName; onAccentChange: (accent: 
           </Text>
         </Section>
 
-        <Section
-          title="Theme"
-          description="Every colour, the font and every text of DocumentKit's screens can be set on the provider."
-          actions={<Text style={styles.note}>{`<DocumentKitProvider theme={{primaryColor: '${ACCENTS[accent]}'}}>`}</Text>}>
-          <Segmented label="Primary colour" options={Object.keys(ACCENTS) as AccentName[]} value={accent} onChange={onAccentChange} />
-        </Section>
-
         <View style={styles.footer} />
       </ScrollView>
     </SafeAreaView>
@@ -433,19 +507,94 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  header: {
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  logo: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  brandText: {
+    flex: 1,
   },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800',
     color: colors.text,
   },
+  packageName: {
+    fontSize: 13,
+    color: colors.muted,
+  },
+  platformChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: colors.accentSoft,
+  },
+  platformChipText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: colors.accent,
+  },
   subtitle: {
-    marginTop: 4,
-    marginBottom: 16,
-    fontSize: 14,
+    marginTop: 12,
+    fontSize: 14.5,
     color: colors.muted,
     lineHeight: 20,
+  },
+  nav: {
+    marginHorizontal: -16,
+    paddingVertical: 10,
+    marginBottom: 6,
+    backgroundColor: colors.background,
+  },
+  navContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  navChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: colors.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  navChipPressed: {
+    backgroundColor: colors.accentSoft,
+  },
+  navChipText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  navDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.success,
   },
   note: {
     fontSize: 13,

@@ -1,0 +1,131 @@
+name: Demo iOS (simulator)
+
+# Builds the example Playground app for the iOS Simulator and attaches it, zipped,
+# to a GitHub Release. iPhones only install apps signed with an Apple Developer
+# account, so this build is for the Simulator and for Appetize (browser demo),
+# not for real phones.
+#
+# Stable download link (always the newest release):
+#   https://github.com/PremRockz/react-native-document-kit/releases/latest/download/react-native-document-kit-demo-ios-simulator.zip
+#
+# Appetize (optional): on a release, the build replaces the one behind the iOS
+# Appetize link, so the link never changes. Set up once:
+#   1. Upload the zip at appetize.io by hand; that creates the iOS app and its link.
+#   2. Repository secret   APPETIZE_API_TOKEN       = an Appetize API token
+#   3. Repository variable APPETIZE_IOS_PUBLIC_KEY  = the app's public key (the end of its link)
+# Without both, the Appetize step is skipped.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Attach the build to this tag''s release (e.g. v0.2.0). The app is built from the branch you run this on. Leave empty to only upload a workflow artifact.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: demo-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ZIP_NAME: react-native-document-kit-demo-ios-simulator.zip
+  RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+  # Secrets can't be tested in `if:`, so they are read through env.
+  APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+  APPETIZE_IOS_PUBLIC_KEY: ${{ vars.APPETIZE_IOS_PUBLIC_KEY }}
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 90
+
+    steps:
+      # A tag push builds that tag. A manual run builds the branch it was started
+      # on, so a fix on main can still produce the build for an existing release.
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            example/package-lock.json
+
+      - name: Set up Ruby (CocoaPods)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: example
+
+      # `prepare` runs `bob build`, so this also builds the library into lib/
+      - name: Install library dependencies
+        run: npm ci
+
+      - name: Install example dependencies
+        working-directory: example
+        run: npm ci
+
+      - name: Install pods
+        working-directory: example/ios
+        run: bundle exec pod install
+
+      # Release: the JS bundle is inside the app, so it runs without Metro.
+      # Both simulator architectures (arm64 and x86_64), so it runs on any Mac and on Appetize.
+      - name: Build for the iOS Simulator
+        working-directory: example/ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace DocumentKitPlayground.xcworkspace \
+            -scheme DocumentKitPlayground \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Zip the app
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent \
+            example/ios/build/Build/Products/Release-iphonesimulator/DocumentKitPlayground.app \
+            "dist/$ZIP_NAME"
+          ls -lh dist
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: demo-ios-simulator
+          path: dist/${{ env.ZIP_NAME }}
+          retention-days: 30
+
+      - name: Attach build to GitHub Release
+        if: env.RELEASE_TAG != ''
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: dist/${{ env.ZIP_NAME }}
+          fail_on_unmatched_files: true
+
+      # Updates the existing iOS app (same public key, same link); never creates a new one.
+      - name: Update the iOS Appetize demo
+        if: env.RELEASE_TAG != '' && env.APPETIZE_API_TOKEN != '' && env.APPETIZE_IOS_PUBLIC_KEY != ''
+        uses: appetizeio/github-action-appetize@v1.1.0
+        with:
+          apiToken: ${{ secrets.APPETIZE_API_TOKEN }}
+          publicKey: ${{ vars.APPETIZE_IOS_PUBLIC_KEY }}
+          platform: ios
+          appFile: dist/${{ env.ZIP_NAME }}
+          note: ${{ env.RELEASE_TAG }}

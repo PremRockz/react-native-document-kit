@@ -19,11 +19,9 @@ Objective-C++ with AVFoundation and QuickLook on iOS. From npm it needs only
 phone, streamed into your browser. Nothing to install. The cloud phone has no
 real camera, so camera shots show a test scene.
 
-> **Status: 0.1, early.**
+> **Status: 0.2, early.**
 > - **Android:** ready. Every feature has been tested on a real device.
-> - **iOS: experimental.** The code is complete and compiles against React
->   Native 0.86, but it has not yet been run in an app or on a device.
->   Reports and fixes are welcome.
+> - **iOS:** ready. Tested on a real device.
 >
 > Expect changes before 1.0.
 
