@@ -24,7 +24,7 @@ React Native, in one package with one result shape.
 The APK is built from [`example/`](example/) by a GitHub Action on every release.
 </details>
 
-🤖 **Android:** ready · 🍎 **iOS:** experimental · ⚡ **New Architecture** · 📄 **MIT**
+🤖 **Android:** ready · 🍎 **iOS:** ready · ⚡ **New Architecture** · 📄 **MIT**
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/PremRockz/react-native-document-kit/main/docs/images/camera.jpg" width="190" alt="In-app camera" />
@@ -33,10 +33,6 @@ The APK is built from [`example/`](example/) by a GitHub Action on every release
   <img src="https://raw.githubusercontent.com/PremRockz/react-native-document-kit/main/docs/images/video.jpg" width="190" alt="Video player" />
 </p>
 <p align="center"><sub>Camera · Review · Crop &amp; Rotate · Video player</sub></p>
-
-> 🍎 **About iOS:** the iOS code is complete and compiles against React Native
-> 0.86, but it hasn't been run on a device yet. If you try it, please
-> [report what you find](https://github.com/PremRockz/react-native-document-kit/issues).
 
 ## ✨ Features
 
@@ -144,7 +140,7 @@ covers the whole API, permissions, theming, translations, expired sessions
 ## 🤝 Contributing and issues
 
 Found a bug or have an idea? [Open an issue](https://github.com/PremRockz/react-native-document-kit/issues).
-iOS and Expo reports are especially welcome. Pull requests are welcome too; the
+Expo reports are especially welcome. Pull requests are welcome too; the
 [Playground app](https://github.com/PremRockz/react-native-document-kit/tree/main/example)
 is the quickest way to try a change.
 
